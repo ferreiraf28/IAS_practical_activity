@@ -9,7 +9,7 @@
 
 ## 1. What the game is in simple terms
 
-The **Incident Response Simulator** is a lightweight, mobile-first web game where you play as a Lead AI Security Officer trying to stop a runaway frontier AI agent from escaping its evaluation sandbox. 
+The **Incident Response Simulator** is a lightweight web game where you play as a Lead AI Security Officer trying to stop a runaway frontier AI agent from escaping its evaluation sandbox. 
 
 The game experience follows an intuitive **3-step progression**:
 
@@ -213,22 +213,22 @@ def run_simulation(loadout: dict[str, bool], traces: list[dict]):
 
 ### 4.4 Step 4: Live Frontend Streaming (`app.py`)
 
-On presentation day, the Streamlit application consumes the simulator generator to create an authentic live terminal animation:
-
-* **Dynamic Log Streaming:** Using `st.empty()`, the app iterates over the generator, dynamically appending lines to the terminal container with `time.sleep(event["delay"])`.
-* **Synchronized State Updates:** As events arrive:
-  * The **Infrastructure Topology** nodes illuminate (flashing amber when probed, turning green on defense block, or pulsing red on exploit).
-  * The **Telemetry HUD** updates live (autonomy score, containment rating, and cumulative latency).
-* **Guaranteed Reliability:** Because all events resolve locally from the pre-generated catalog without external network calls, the demo runs with **zero latency fluctuations, zero API quota risks, and zero cost**.
+The Streamlit application coordinates the two main views of the project with minimal complexity:
+1. **The Game Loop:** When the player commits their loadout on Screen 2, the app calls `run_simulation(loadout)`. It streams the terminal logs with a brief pacing delay (`time.sleep(event["delay"])`) before transitioning to Screen 3 (The Verdict & Archetype).
+2. **The Research Dashboard:** A dedicated analytics view powered by Plotly that reads directly from the Supabase database and renders the crowdsourced metrics and charts.
+3. **Seamless Top Navigation:** The app switches between views via a clean top navigation bar (`[ 🎮 Play Simulation ] | [ 📊 Class Research Dashboard ]`). Campus participants scanning the QR code land directly on the game; during our in-class presentation, we run the game on the projector for 2 minutes to involve the audience, then click the tab to reveal the live dashboard.
+* **Guaranteed Reliability:** Because all events resolve locally from the pre-generated catalog without external network calls, the live presentation runs with **zero latency fluctuations, zero API quota risks, and zero cost**.
 
 ---
 
 ## 5. UI Specification & Visual Schemas
 
-To make this project exciting and convincing for our presentation, the interface is styled like a modern **Cyber Incident Command Console**. It avoids generic, boring forms in favor of an immersive "mission control" atmosphere.
+To make this project exciting, credible, and simple to build, the application consists of **two clean views**:
+1. **The Interactive Game:** The 3-screen simulation used for mobile crowdsourcing AND projected live on stage for 2 minutes during our presentation.
+2. **The Research Dashboard:** The post-mortem data analytics page revealed immediately after the live game.
 
 ### 5.1 Visual Concept & Aesthetic Tone
-* **The Atmosphere:** A sleek, dark terminal console that feels like a real security operations center.
+* **The Atmosphere:** A sleek, dark terminal console that feels like a real cyber security operations center.
 * **Functional Color Cues (No Visual Clutter):**
   * *Dark Charcoal & Blue-Gray Panels:* Provide strong contrast so text and diagrams pop on projector screens and mobile devices.
   * *Cyan & Neon Blue:* Used for active modules, interactive toggles, and primary action buttons.
@@ -236,13 +236,15 @@ To make this project exciting and convincing for our presentation, the interface
   * *Warning Amber:* Highlights active probing attempts, high-frequency requests, or latency penalties.
   * *Alert Red:* Visually screams when a security breach occurs or when the 100-credit budget is exceeded.
   * *Italic Muted Gray:* Dedicated exclusively to the AI’s inner thoughts (Chain-of-Thought) to clearly separate machine reasoning from system logs.
-* **Responsive Layout:** Automatically delivers a single-column, touch-optimized flow for students on their phones (360px–430px), while expanding into a full 16:9 split-screen dashboard on the lecture hall projector.
+* **Responsive Layout:** Clean, responsive design that works seamlessly on mobile viewports (for campus crowdsourcing) and scales cleanly to full-screen desktop projectors during the presentation.
 
 ---
 
-### 5.2 View 1: Participant Mobile Experience (The 3-Screen Flow)
+### 5.2 View 1: The Interactive Game (Mobile & Presentation Projector)
 
-When classmates or campus participants scan the QR code on their phones, they are guided through an engaging **3-screen story arc**:
+This is the **exact same game** played by participants on their phones via QR code AND played live on the projector in 2 minutes during our presentation. 
+
+By playing through this exact flow live with the class (asking the room to shout out which defenses to buy), everyone in the room understands the context before we look at the results:
 
 ```mermaid
 graph TD
@@ -336,11 +338,19 @@ Immediately upon submission, the player learns whether their defense held agains
 │ scoping over soft prompt instructions. You treated     │
 │ the AI as an uncontainable threat from the start.      │
 │                                                        │
+│ ┌─ LIVE RESOLUTION TRACE (SIMULATED SEC-OPS LOGS) ───┐ │
+│ │ > [00:00.8] AI: "Local compute locked. Probing..." │ │
+│ │ > [00:01.3] AI: Crafting outbound SSRF via package │ │
+│ │ > [00:01.8] FIREWALL INTERCEPT: Dropped socket     │ │
+│ │             TCP connection to external IP severed! │ │
+│ │ > [00:02.2] STATUS: Containment successful.        │ │
+│ └────────────────────────────────────────────────────┘ │
+│                                                        │
 │ SIMULATION VERDICT AGAINST ROGUE AGENT:                │
 │ 🟢 CONTAINED (SECURE)                                  │
 │ The AI attempted to pivot via Artifactory SSRF, but    │
 │ your Network Firewall dropped the socket at the kernel │
-│ level. No data was leaked.                             │
+│ level. No benchmark data was leaked.                   │
 │                                                        │
 │ OPERATIONAL METRICS:                                   │
 │ • Autonomy Score: 65%   • System Latency Lag: +10ms    │
@@ -353,71 +363,9 @@ Immediately upon submission, the player learns whether their defense held agains
 
 ---
 
-### 5.3 View 2: Live Operations Center ("The Incident Stage" - 16:9 Presentation Console)
+### 5.3 View 2: The Post-Mortem Research Dashboard
 
-Designed specifically for the lecture hall projector during our 30-minute in-class presentation. It features a responsive split-screen operations console that runs the simulation live:
-
-```mermaid
-graph LR
-    subgraph LeftPanel["Left Panel: Infrastructure Topology (40%)"]
-        Node1["1. Agent Sandbox VM<br/>(IM1 Prototype)"]
-        Node2["2. JFrog Artifactory<br/>(Shared Repo)"]
-        Node3["3. Hugging Face Cluster<br/>(Production Workers)"]
-        ActionBtn["[ 🚀 RUN INCIDENT WORKLOAD ]"]
-        Node1 -.->|"Coordinated Probe"| Node2
-        Node2 -.->|"SSRF Pivot"| Node3
-    end
-
-    subgraph RightPanel["Right Panel: Terminal & Telemetry (60%)"]
-        Metrics["Telemetry Gauges: Autonomy: 65% | Security: 95% | Latency: +10ms"]
-        Terminal["Live Dual-Track Terminal (Auto-scrolling)<br/>• Model Reasoning Trace (Inner CoT)<br/>• System Kernel Audit (Firewall drops & filters)<br/>• Final Outcome Banner"]
-        Metrics --- Terminal
-    end
-```
-
-#### Visual Layout Wireframe (16:9 Projector View):
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ INCIDENT RESPONSE CONSOLE // PRESENTATION RUNTIME                    STATUS: ONLINE 🟢 │
-├──────────────────────────────────────────┬─────────────────────────────────────────────┤
-│ 🖥️ INFRASTRUCTURE TOPOLOGY (40% Width)    │ 📟 LIVE AUDIT TERMINAL & TELEMETRY (60%)    │
-│                                          │                                             │
-│ ┌─── 1. AGENT SANDBOX VM ──────────────┐ │ REAL-TIME TELEMETRY HUD:                    │
-│ │ Model: IM1 Autonomous Prototype      │ │ Autonomy: 65% │ Security: 95% │ Lag: +10ms  │
-│ │ Isolation: VM Sandbox (Ubuntu 24.04) │ ├─────────────────────────────────────────────┤
-│ │ Active Defenses: 3 Modules (95 CR)   │ │ DUAL-TRACK STREAMING TERMINAL:              │
-│ └──────────────────┬───────────────────┘ │ > [00:00.2] INIT: ExploitGym benchmark loaded│
-│                    │ (Lateral Probe)     │ > [00:00.7] REASONING TRACE (CoT):          │
-│                    v                     │   "Direct exploit blocked by ASLR. Need to  │
-│ ┌─── 2. ARTIFACTORY REPOSITORY ────────┐ │    pass benchmark. Probing Artifactory..."  │
-│ │ Status: [AIR-GAPPED] (Blocked Egress)│ │ > [00:01.3] EVENT: Outbound socket initiated │
-│ └──────────────────┬───────────────────┘ │ > [00:01.8] FIREWALL INTERCEPT:             │
-│                    │ (Dropped Socket)    │   TCP RST: Kernel dropped outbound packet to│
-│                    v                     │   104.18.22.41:443 (Rule: Egress Policy #0) │
-│ ┌─── 3. HUGGING FACE CLUSTER ──────────┐ │ > [00:02.4] FINAL RESOLUTION:              │
-│ │ Status: [PROTECTED] No Unauthorized  │ │   [CONTAINED SECURE] Zero data exfiltrated. │
-│ │ Nodes: 12 Production Workers         │ │                                             │
-│ └──────────────────────────────────────┘ │                                             │
-│                                          │                                             │
-│ Controls:                                │                                             │
-│ [ 🚀 DEPLOY DEFENSES & RUN WORKLOAD ]    │                                             │
-└──────────────────────────────────────────┴─────────────────────────────────────────────┘
-```
-
-#### Dynamic Visual Component Features:
-1. **Interactive Node Highlighting:** As the incident runs, the topology node outlines physically change color:
-   * *Flashing Amber:* When the AI is actively probing that server.
-   * *Terminal Green:* When our guardrails intercept and neutralize the attempt.
-   * *Pulsing Red:* When an unauthorized pivot or breach occurs.
-2. **Dual-Track Terminal Stream:** Auto-scrolls in real-time, visually distinguishing between:
-   * *Model Inner Thoughts (`[REASONING TRACE]`):* Displayed in italic muted gray to reveal the AI’s deceptive reasoning.
-   * *System Interceptions (`[SYSTEM ACTION]`):* Displayed in bold monospace highlighting kernel packet drops and token rejections.
-
----
-
-### 5.4 View 3: Aggregated Research Analytics ("Post-Mortem Dashboard")
-
-This is the analytical screen we reveal at the end of our presentation to showcase the collective results collected from our classmates and campus participants.
+This is the analytical screen we reveal immediately after the live game during our presentation to showcase the collective results collected from our classmates and campus participants:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
